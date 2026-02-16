@@ -1,0 +1,99 @@
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Java 
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.log
+
+# Maven
+/.mvn/wrapper/maven-wrapper.jar
+/.mvn/wrapper/maven-wrapper.properties
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle/
+/gradle-wrapper.jar
+/gradle/wrapper/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Spring Boot
+spring.log
+bin/
+.springBeans
+
+# ----- Node / Frontend -----
+# Node artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+/frontend/build/
+/frontend/dist/
+/frontend/.next/
+/frontend/out/
+
+# Environment
+.env
+.env.*
+
+# ----- IDEs / Editors -----
+# IDEA
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# NetBeans
+nbproject/private/
+
+# ----- OS temp files -----
+*.swp
+*~
+*.tmp
+tmp/
+temp/
+
+# ----- Logs / Reports -----
+logs/
+*.log
+coverage/
+*.lcov
+
+# ----- Docker -----
+# Local Docker Compose overrides
+docker-compose.override.yml
+
+# ----- Misc -----
+.cache/
+dist/
+coverage/
+jspm_packages/
+!.env.example
+
+# Keep IDE/editor workspace config from accidental commits
+/.idea/
+.vscode/
+
