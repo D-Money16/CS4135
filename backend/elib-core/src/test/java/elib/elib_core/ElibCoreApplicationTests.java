@@ -1,10 +1,10 @@
-package ie.ul.cs4135spring;
+package elib.elib_core;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Cs4135springApplicationTests {
+class ElibCoreApplicationTests {
 
 	@Test
 	void contextLoads() {
