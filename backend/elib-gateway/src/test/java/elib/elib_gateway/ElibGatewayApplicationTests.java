@@ -1,10 +1,10 @@
-package elib.elib_core;
+package elib.elib_gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ElibCoreApplicationTests {
+class ElibGatewayApplicationTests {
 
 	@Test
 	void contextLoads() {
