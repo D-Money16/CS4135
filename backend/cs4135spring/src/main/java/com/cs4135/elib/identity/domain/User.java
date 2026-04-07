@@ -1,3 +1,5 @@
+package com.cs4135.elib.identity.domain;
+
 @Entity
 public class User {
     @Id
