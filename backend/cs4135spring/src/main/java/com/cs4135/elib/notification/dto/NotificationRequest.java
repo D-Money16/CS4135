@@ -1,4 +1,4 @@
-package elib.notification.dto;
+package com.cs4135.elib.notification.dto;
 
 import lombok.Data;
 import java.util.UUID;
