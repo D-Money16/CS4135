@@ -1,4 +1,4 @@
-package elib.catalogue.dto;
+package com.cs4135.elib.catalogue.dto;
 
 import lombok.Data;
 import java.util.UUID;
