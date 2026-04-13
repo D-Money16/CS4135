@@ -25,12 +25,12 @@ services:
       args:
         SERVICE_NAME: elib-identity
     ports:
-      - "8082:8082"
+      - "9921:9921"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8082
+      SERVER_PORT: 9921
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=identity
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -42,12 +42,12 @@ services:
       args:
         SERVICE_NAME: elib-catalogue
     ports:
-      - "8081:8081"
+      - "9922:9922"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8081
+      SERVER_PORT: 9922
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=catalogue
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -59,12 +59,12 @@ services:
       args:
         SERVICE_NAME: elib-lending
     ports:
-      - "8085:8085"
+      - "9923:9923"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8085
+      SERVER_PORT: 9923
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=lending
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -76,9 +76,9 @@ services:
       args:
         SERVICE_NAME: elib-notification
     ports:
-      - "8083:8083"
+      - "9924:9924"
     environment:
-      SERVER_PORT: 8083
+      SERVER_PORT: 9924
 
   elib-bookclub:
     build:
@@ -87,9 +87,9 @@ services:
       args:
         SERVICE_NAME: elib-bookclub
     ports:
-      - "8084:8084"
+      - "9925:9925"
     environment:
-      SERVER_PORT: 8084
+      SERVER_PORT: 9925
 
   elib-gateway:
     build:
@@ -98,7 +98,7 @@ services:
       args:
         SERVICE_NAME: elib-gateway
     ports:
-      - "8080:8080"
+      - "9920:9920"
     depends_on:
       - elib-identity
       - elib-catalogue
@@ -106,12 +106,12 @@ services:
       - elib-notification
       - elib-bookclub
     environment:
-      SERVER_PORT: 8080
-      IDENTITY_SERVICE_URL: http://elib-identity:8082
-      CATALOGUE_SERVICE_URL: http://elib-catalogue:8081
-      LENDING_SERVICE_URL: http://elib-lending:8085
-      NOTIFICATION_SERVICE_URL: http://elib-notification:8083
-      BOOKCLUB_SERVICE_URL: http://elib-bookclub:8084
+      SERVER_PORT: 9920
+      IDENTITY_SERVICE_URL: http://elib-identity:9921
+      CATALOGUE_SERVICE_URL: http://elib-catalogue:9922
+      LENDING_SERVICE_URL: http://elib-lending:9923
+      NOTIFICATION_SERVICE_URL: http://elib-notification:9924
+      BOOKCLUB_SERVICE_URL: http://elib-bookclub:9925
 
 volumes:
   postgres_data:
