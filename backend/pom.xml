@@ -15,9 +15,12 @@
 	<description>E-Library Microservices Parent</description>
 
 	<modules>
-		<module>elib-core</module>
-		<module>elib-gateway</module>
-		<module>elib-support</module>
+<module>elib-gateway</module>
+<module>elib-catalogue</module>
+		<module>elib-identity</module>
+		<module>elib-notification</module>
+		<module>elib-bookclub</module>
+		<module>elib-lending</module>
 	</modules>
 
 	<properties>
