@@ -21,6 +21,12 @@ public class BorrowBookUseCase {
     }
 
     public Loan execute(UUID userId, UUID bookId) {
+        long activeLoans = loanRepository.findByUserIdAndStatus(userId, LoanStatus.ACTIVE).size()
+                + loanRepository.findByUserIdAndStatus(userId, LoanStatus.OVERDUE).size();
+        if (activeLoans >= 5) {
+            throw new IllegalStateException("User has reached the maximum of 5 active loans");
+        }
+
         UUID copyId = catalogueClient.reserveCopy(bookId);
 
         Loan loan = new Loan();
