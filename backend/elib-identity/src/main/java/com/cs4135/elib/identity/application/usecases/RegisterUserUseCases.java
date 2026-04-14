@@ -17,8 +17,13 @@ public class RegisterUserUseCases {
     private PasswordEncoder encoder;
 
     public User execute(User user) {
+        if (repo.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already taken");
+        }
         user.setPassword(encoder.encode(user.getPassword()));
         user.setRole(Role.STUDENT);
-        return repo.save(user);
+        User saved = repo.save(user);
+        saved.setPassword(null); // don't return hashed password
+        return saved;
     }
 }

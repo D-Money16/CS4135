@@ -1,4 +1,4 @@
-package elib.lending.dto;
+package com.cs4135.elib.lending.dto;
 
 import lombok.Data;
 import java.util.UUID;

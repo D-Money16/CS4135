@@ -63,8 +63,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elib-catalogue:
+        condition: service_started
     environment:
       SERVER_PORT: 9923
+      CATALOGUE_SERVICE_URL: http://elib-catalogue:9922
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=lending
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword

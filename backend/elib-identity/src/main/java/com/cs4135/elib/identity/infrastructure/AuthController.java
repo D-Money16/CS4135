@@ -6,6 +6,8 @@ import com.cs4135.elib.identity.domain.User;
 import com.cs4135.elib.identity.dto.AuthResponse;
 import com.cs4135.elib.identity.dto.LoginRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,12 +21,20 @@ public class AuthController {
     private LoginUserUseCase loginUseCase;
 
     @PostMapping("/register")
-    public User register(@RequestBody User user) {
-        return registerUseCase.execute(user);
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(registerUseCase.execute(user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
-        return loginUseCase.execute(request);
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            return ResponseEntity.ok(loginUseCase.execute(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 }
