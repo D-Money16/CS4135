@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eLib — Books</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; min-height: 100vh; color: #0f172a; }
+
+    nav { background: #fff; border-bottom: 1px solid #e2e8f0; padding: .9rem 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; gap: 1rem; }
+    .nav-logo { font-size: 1.4rem; font-weight: 800; color: #2563eb; white-space: nowrap; }
+    .nav-links { display: flex; gap: .25rem; }
+    .nav-links a { text-decoration: none; color: #64748b; font-size: .9rem; font-weight: 500; padding: .35rem .75rem; border-radius: 6px; transition: all .15s; }
+    .nav-links a:hover { color: #2563eb; background: #eff6ff; }
+    .nav-links a.active { color: #2563eb; background: #eff6ff; font-weight: 600; }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .nav-user { font-size: .875rem; color: #64748b; white-space: nowrap; }
+    .nav-user span { font-weight: 600; color: #0f172a; }
+    .btn-logout { background: none; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .35rem .85rem; font-size: .875rem; cursor: pointer; color: #64748b; transition: all .15s; }
+    .btn-logout:hover { border-color: #dc2626; color: #dc2626; }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p { font-size: .9rem; color: #64748b; margin-top: .2rem; }
+
+    .search-bar { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem 1.25rem; display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.5rem; }
+    .search-bar input, .search-bar select { padding: .55rem .8rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: .9rem; color: #0f172a; outline: none; background: #fff; flex: 1; min-width: 140px; transition: border-color .15s; }
+    .search-bar input:focus, .search-bar select:focus { border-color: #2563eb; }
+    .search-bar input::placeholder { color: #94a3b8; }
+
+    .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; }
+    .book-card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; display: flex; flex-direction: column; transition: box-shadow .15s; }
+    .book-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .book-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .3rem; line-height: 1.3; }
+    .book-meta { font-size: .8rem; color: #64748b; margin-bottom: .5rem; }
+    .book-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .9rem; }
+    .tag { background: #f1f5f9; color: #475569; font-size: .75rem; padding: .2rem .55rem; border-radius: 20px; }
+    .book-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .avail-badge { font-size: .8rem; font-weight: 600; padding: .25rem .6rem; border-radius: 20px; white-space: nowrap; }
+    .avail-green { background: #f0fdf4; color: #16a34a; }
+    .avail-yellow { background: #fffbeb; color: #d97706; }
+    .avail-red { background: #fef2f2; color: #dc2626; }
+
+    .btn-primary { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: .5rem 1rem; font-size: .875rem; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .btn-sm { padding: .35rem .8rem; font-size: .82rem; }
+
+    .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+    .empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
+    .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1e293b; color: #fff; padding: .7rem 1.2rem; border-radius: 8px; font-size: .875rem; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 100; max-width: 320px; }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: #15803d; }
+    #toast.error { background: #dc2626; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal label { display: block; font-size: .78rem; font-weight: 600; color: #374151; margin-bottom: .3rem; text-transform: uppercase; letter-spacing: .05em; }
+    .modal input, .modal textarea { width: 100%; padding: .6rem .8rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: .9rem; color: #0f172a; outline: none; margin-bottom: .9rem; font-family: inherit; transition: border-color .15s; }
+    .modal input:focus, .modal textarea:focus { border-color: #2563eb; }
+    .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: .5rem; }
+    .btn-cancel { background: none; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .5rem 1rem; font-size: .9rem; cursor: pointer; color: #64748b; }
+    .btn-cancel:hover { border-color: #94a3b8; }
+    .hidden { display: none; }
+
+    .isbn-note { font-size: .78rem; color: #94a3b8; margin-top: -.6rem; margin-bottom: .9rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">📚 eLib</div>
+  <div class="nav-links">
+    <a href="/books" class="active">Books</a>
+    <a href="/loans">My Loans</a>
+    <a href="/">Book Clubs</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">Signed in as <span id="navUsername">…</span></div>
+    <button class="btn-logout" id="logoutBtn">Log out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Browse Books</h1>
+      <p>Search the catalogue and borrow books.</p>
+    </div>
+    <button class="btn-primary" id="addBookBtn">+ Add Book</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchTitle" placeholder="Search by title…" />
+    <input type="text" id="searchAuthor" placeholder="Author…" />
+    <input type="text" id="searchCategory" placeholder="Category…" />
+    <select id="searchAvail">
+      <option value="">Any availability</option>
+      <option value="AVAILABLE">Available</option>
+      <option value="BORROWED">Borrowed</option>
+    </select>
+    <button class="btn-primary btn-sm" id="searchBtn">Search</button>
+    <button class="btn-cancel btn-sm" id="clearBtn">Clear</button>
+  </div>
+
+  <div id="booksContainer" class="loading">Loading books…</div>
+</main>
+
+<div id="toast"></div>
+
+<!-- Add Book Modal -->
+<div id="addBookModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>Add a Book</h2>
+    <label>ISBN</label>
+    <input type="text" id="bookIsbn" placeholder="e.g. 978-3-16-148410-0" />
+    <p class="isbn-note">ISBN-10 or ISBN-13 (dashes allowed)</p>
+    <label>Title</label>
+    <input type="text" id="bookTitle" placeholder="Book title" />
+    <label>Description <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <textarea id="bookDesc" placeholder="Brief description…" style="min-height:70px;resize:vertical"></textarea>
+    <label>Publication Year <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <input type="number" id="bookYear" placeholder="e.g. 2023" min="1000" max="2099" />
+    <label>Number of Copies</label>
+    <input type="number" id="bookCopies" value="1" min="1" max="99" />
+    <label>Authors <span style="font-weight:400;text-transform:none">(comma-separated)</span></label>
+    <input type="text" id="bookAuthors" placeholder="e.g. George Orwell, J.K. Rowling" />
+    <label>Categories <span style="font-weight:400;text-transform:none">(comma-separated)</span></label>
+    <input type="text" id="bookCategories" placeholder="e.g. Fiction, Classic" />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelAddBook">Cancel</button>
+      <button class="btn-primary" id="confirmAddBook">Add Book</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:9920';
+  const token  = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const username = localStorage.getItem('username') || 'User';
+
+  if (!token || !userId) { window.location.href = '/login'; }
+
+  document.getElementById('navUsername').textContent = username;
+  document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = '/login'; });
+
+  async function api(path, options = {}) {
+    const res = await fetch(`${API}${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'X-User-Id': userId, ...(options.headers || {}) }
+    });
+    if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+    return res;
+  }
+
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = type ? `show ${type}` : 'show';
+    setTimeout(() => t.className = '', 3000);
+  }
+
+  function availBadge(available, total) {
+    if (available === 0) return `<span class="avail-badge avail-red">Unavailable</span>`;
+    if (available <= 2)  return `<span class="avail-badge avail-yellow">${available}/${total} left</span>`;
+    return `<span class="avail-badge avail-green">${available}/${total} available</span>`;
+  }
+
+  function renderBooks(books) {
+    const c = document.getElementById('booksContainer');
+    if (!books.length) {
+      c.innerHTML = `<div class="empty"><div class="icon">📖</div><p>No books found.</p></div>`;
+      c.className = ''; return;
+    }
+    c.className = 'books-grid';
+    c.innerHTML = books.map(b => {
+      const authors = b.authors?.map(a => a.name).join(', ') || '—';
+      const cats = b.categories?.map(c => `<span class="tag">${escHtml(c.name)}</span>`).join('') || '';
+      const canBorrow = b.availableCopies > 0;
+      return `
+        <div class="book-card">
+          <h3>${escHtml(b.title)}</h3>
+          <div class="book-meta">by ${escHtml(authors)} ${b.publicationYear ? `· ${b.publicationYear}` : ''}</div>
+          ${cats ? `<div class="book-tags">${cats}</div>` : ''}
+          <div class="book-footer">
+            ${availBadge(b.availableCopies, b.totalCopies)}
+            <button class="btn-primary btn-sm" onclick="borrowBook('${b.id}','${escHtml(b.title)}',this)" ${canBorrow ? '' : 'disabled'}>
+              ${canBorrow ? 'Borrow' : 'Unavailable'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadBooks(params = {}) {
+    const c = document.getElementById('booksContainer');
+    c.className = 'loading'; c.textContent = 'Loading books…';
+    try {
+      const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v))).toString();
+      const path = qs ? `/api/book-catalogue/books/search?${qs}` : '/api/book-catalogue/books';
+      const res = await api(path);
+      if (!res.ok) throw new Error();
+      renderBooks(await res.json());
+    } catch {
+      c.className = ''; c.innerHTML = `<div class="empty"><div class="icon">⚠️</div><p>Could not load books. Is the catalogue service running?</p></div>`;
+    }
+  }
+
+  async function borrowBook(bookId, title, btn) {
+    btn.disabled = true; btn.textContent = 'Borrowing…';
+    try {
+      const res = await api('/api/lending/borrow', { method: 'POST', body: JSON.stringify({ userId, bookId }) });
+      if (res.ok || res.status === 201) {
+        toast(`Borrowed "${title}" successfully! 📚`, 'success');
+        loadBooks(currentSearch());
+      } else {
+        const msg = await res.text();
+        toast(msg.includes('5') ? 'You have reached the 5 loan limit.' : (msg || 'Could not borrow book.'), 'error');
+        btn.disabled = false; btn.textContent = 'Borrow';
+      }
+    } catch { toast('Request failed.', 'error'); btn.disabled = false; btn.textContent = 'Borrow'; }
+  }
+
+  function currentSearch() {
+    return {
+      title: document.getElementById('searchTitle').value.trim(),
+      author: document.getElementById('searchAuthor').value.trim(),
+      category: document.getElementById('searchCategory').value.trim(),
+      availability: document.getElementById('searchAvail').value
+    };
+  }
+
+  document.getElementById('searchBtn').addEventListener('click', () => loadBooks(currentSearch()));
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    ['searchTitle','searchAuthor','searchCategory'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('searchAvail').value = '';
+    loadBooks();
+  });
+  ['searchTitle','searchAuthor','searchCategory'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') loadBooks(currentSearch()); });
+  });
+
+  // Add Book modal
+  const addModal = document.getElementById('addBookModal');
+  document.getElementById('addBookBtn').addEventListener('click', () => addModal.classList.remove('hidden'));
+  document.getElementById('cancelAddBook').addEventListener('click', () => addModal.classList.add('hidden'));
+  addModal.addEventListener('click', e => { if (e.target === addModal) addModal.classList.add('hidden'); });
+
+  document.getElementById('confirmAddBook').addEventListener('click', async () => {
+    const isbn       = document.getElementById('bookIsbn').value.trim();
+    const title      = document.getElementById('bookTitle').value.trim();
+    const description= document.getElementById('bookDesc').value.trim();
+    const publicationYear = parseInt(document.getElementById('bookYear').value) || null;
+    const copies     = parseInt(document.getElementById('bookCopies').value) || 1;
+    const authors    = document.getElementById('bookAuthors').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const categories = document.getElementById('bookCategories').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+    if (!isbn || !title) return toast('ISBN and title are required.', 'error');
+
+    const btn = document.getElementById('confirmAddBook');
+    btn.disabled = true; btn.textContent = 'Adding…';
+
+    try {
+      const res = await api('/api/book-catalogue/books', {
+        method: 'POST',
+        body: JSON.stringify({ isbn, title, description, publicationYear, copies, authors, categories })
+      });
+      if (res.ok) {
+        addModal.classList.add('hidden');
+        ['bookIsbn','bookTitle','bookDesc','bookYear','bookAuthors','bookCategories'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('bookCopies').value = '1';
+        toast(`"${title}" added to the catalogue!`, 'success');
+        loadBooks();
+      } else {
+        const msg = await res.text();
+        toast(msg || 'Failed to add book.', 'error');
+      }
+    } catch { toast('Request failed.', 'error'); }
+
+    btn.disabled = false; btn.textContent = 'Add Book';
+  });
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadBooks();
+</script>
+</body>
+</html>

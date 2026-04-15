@@ -39,7 +39,7 @@ public class ReserveBookCopyUseCase {
             throw new RuntimeException("No available copies for book: " + bookId);
         }
 
-        BookCopy copy = available.getFirst();
+        BookCopy copy = available.get(0);
         copy.transitionTo(AvailabilityStatus.BORROWED);
         bookCopyRepository.save(copy);
 

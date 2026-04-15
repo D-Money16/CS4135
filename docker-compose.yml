@@ -90,6 +90,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=lending
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
+      CATALOGUE_SERVICE_URL: http://elib-catalogue:9922
 
   elib-notification:
     build:
@@ -115,11 +116,16 @@ services:
     ports:
       - "9925:9925"
     depends_on:
+      postgres:
+        condition: service_healthy
       elib-discovery:
         condition: service_started
     environment:
       SERVER_PORT: 9925
       EUREKA_URI: http://elib-discovery:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=bookclub
+      SPRING_DATASOURCE_USERNAME: myuser
+      SPRING_DATASOURCE_PASSWORD: mypassword
 
   elib-gateway:
     build:

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eLib — Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .logo { font-size: 1.6rem; font-weight: 800; color: #2563eb; margin-bottom: .25rem; }
+    h2 { font-size: 1.1rem; color: #64748b; font-weight: 400; margin-bottom: 1.75rem; }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: .35rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    input {
+      width: 100%;
+      padding: .65rem .85rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: .95rem;
+      color: #0f172a;
+      outline: none;
+      transition: border-color .15s;
+      margin-bottom: 1.1rem;
+    }
+    input:focus { border-color: #2563eb; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: .7rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: .25rem;
+    }
+    button[type="submit"]:hover { background: #1d4ed8; }
+    button[type="submit"]:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      font-size: .875rem;
+      margin-bottom: 1rem;
+    }
+    .hidden { display: none; }
+
+    .footer { text-align: center; margin-top: 1.25rem; font-size: .875rem; color: #64748b; }
+    .footer a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">📚 eLib</div>
+    <h2>Sign in to your account</h2>
+
+    <div id="error" class="error hidden"></div>
+
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Enter your username" required autocomplete="username" />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password" />
+
+      <button type="submit" id="submitBtn">Sign In</button>
+    </form>
+
+    <p class="footer">Don't have an account? <a href="/register">Register</a></p>
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (localStorage.getItem('token')) {
+      window.location.href = '/';
+    }
+
+    const form = document.getElementById('loginForm');
+    const errorDiv = document.getElementById('error');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in…';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('http://localhost:9920/api/user/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('userId', data.userId);
+          localStorage.setItem('username', username);
+          window.location.href = '/';
+        } else {
+          const msg = await res.text();
+          showError(msg || 'Invalid username or password.');
+        }
+      } catch {
+        showError('Cannot reach the server. Make sure the backend is running on port 9920.');
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign In';
+    });
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

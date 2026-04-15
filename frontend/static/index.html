@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eLib — Book Clubs</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      color: #0f172a;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: .9rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      gap: 1rem;
+    }
+    .nav-logo { font-size: 1.4rem; font-weight: 800; color: #2563eb; white-space: nowrap; }
+    .nav-links { display: flex; gap: .25rem; }
+    .nav-links a { text-decoration: none; color: #64748b; font-size: .9rem; font-weight: 500; padding: .35rem .75rem; border-radius: 6px; transition: all .15s; }
+    .nav-links a:hover { color: #2563eb; background: #eff6ff; }
+    .nav-links a.active { color: #2563eb; background: #eff6ff; font-weight: 600; }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .nav-user { font-size: .875rem; color: #64748b; white-space: nowrap; }
+    .nav-user span { font-weight: 600; color: #0f172a; }
+    .btn-logout {
+      background: none;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: .4rem .9rem;
+      font-size: .875rem;
+      cursor: pointer;
+      color: #64748b;
+      transition: all .15s;
+    }
+    .btn-logout:hover { border-color: #dc2626; color: #dc2626; }
+
+    /* ── Main ── */
+    main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p { font-size: .9rem; color: #64748b; margin-top: .2rem; }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .6rem 1.2rem;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    /* ── Cards ── */
+    .clubs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .club-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 1.25rem;
+      transition: box-shadow .15s;
+    }
+    .club-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .club-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .club-card p { font-size: .875rem; color: #64748b; margin-bottom: 1rem; min-height: 2.5rem; }
+    .club-card-footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .btn-view {
+      background: none;
+      color: #64748b;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: .35rem .85rem;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .btn-view:hover { color: #2563eb; border-color: #2563eb; background: #eff6ff; }
+    .club-card .btn-join {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 7px;
+      padding: .35rem .85rem;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .club-card .btn-join:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .club-card .btn-joined {
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 7px;
+      padding: .35rem .85rem;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #94a3b8;
+    }
+    .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty p { font-size: 1rem; }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 3rem; color: #94a3b8; font-size: .95rem; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e293b;
+      color: #fff;
+      padding: .7rem 1.2rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: .3rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .modal input, .modal textarea {
+      width: 100%;
+      padding: .6rem .8rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: .95rem;
+      color: #0f172a;
+      outline: none;
+      margin-bottom: 1rem;
+      font-family: inherit;
+    }
+    .modal input:focus, .modal textarea:focus { border-color: #2563eb; }
+    .modal textarea { resize: vertical; min-height: 80px; }
+    .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: .5rem; }
+    .btn-cancel {
+      background: none;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: .55rem 1.1rem;
+      font-size: .9rem;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .btn-cancel:hover { border-color: #94a3b8; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">📚 eLib</div>
+    <div class="nav-links">
+      <a href="/books">Books</a>
+      <a href="/loans">My Loans</a>
+      <a href="/" class="active">Book Clubs</a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user">Signed in as <span id="navUsername">…</span></div>
+      <button class="btn-logout" id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main>
+    <div class="page-header">
+      <div>
+        <h1>Book Clubs</h1>
+        <p>Browse and join clubs, or start your own.</p>
+      </div>
+      <button class="btn-primary" id="createBtn">+ Create Club</button>
+    </div>
+
+    <div id="clubsContainer" class="loading">Loading clubs…</div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Create Club Modal -->
+  <div id="createModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h2>Create a Book Club</h2>
+      <label for="clubName">Club Name</label>
+      <input type="text" id="clubName" placeholder="e.g. Sci-Fi Readers" required />
+      <label for="clubDesc">Description <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <textarea id="clubDesc" placeholder="What is this club about?"></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelCreate">Cancel</button>
+        <button class="btn-primary" id="confirmCreate">Create Club</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:9920';
+
+    // ── Auth guard ──
+    const token  = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username') || 'User';
+
+    if (!token || !userId) {
+      window.location.href = '/login';
+    }
+
+    document.getElementById('navUsername').textContent = username;
+
+    // ── Logout ──
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.clear();
+      window.location.href = '/login';
+    });
+
+    // ── API helper ──
+    async function api(path, options = {}) {
+      const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': userId,
+          ...(options.headers || {})
+        }
+      });
+      if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+      return res;
+    }
+
+    // ── Toast ──
+    function toast(msg, duration = 2500) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    // ── Load clubs ──
+    let myMemberships = new Set();
+
+    async function loadClubs() {
+      const container = document.getElementById('clubsContainer');
+      try {
+        const res = await api('/api/bookclub/clubs');
+        if (!res.ok) throw new Error();
+        const clubs = await res.json();
+
+        if (!clubs.length) {
+          container.innerHTML = `
+            <div class="empty">
+              <div class="icon">📖</div>
+              <p>No book clubs yet. Be the first to create one!</p>
+            </div>`;
+          return;
+        }
+
+        container.className = 'clubs-grid';
+        container.innerHTML = clubs.map(club => `
+          <div class="club-card" id="card-${club.clubId}">
+            <h3>${escHtml(club.name)}</h3>
+            <p>${escHtml(club.description || 'No description provided.')}</p>
+            <div class="club-card-footer">
+              <a class="btn-view" href="club-detail?id=${club.clubId}">View</a>
+              <button class="btn-join" onclick="joinClub('${club.clubId}', this)">Join</button>
+            </div>
+          </div>`).join('');
+
+      } catch {
+        container.innerHTML = `<div class="empty"><div class="icon">⚠️</div><p>Could not load clubs. Is the bookclub service running on port 8084?</p></div>`;
+      }
+    }
+
+    // ── Join club ──
+    async function joinClub(clubId, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Joining…';
+      try {
+        const res = await api(`/api/bookclub/clubs/${clubId}/join`, { method: 'POST' });
+        if (res.ok || res.status === 204) {
+          btn.className = 'btn-joined';
+          btn.textContent = '✓ Joined';
+          toast('You joined the club!');
+        } else {
+          const msg = await res.text();
+          toast(msg.includes('already') ? 'You\'re already a member.' : 'Could not join club.');
+          btn.disabled = false;
+          btn.textContent = 'Join';
+        }
+      } catch {
+        toast('Request failed.');
+        btn.disabled = false;
+        btn.textContent = 'Join';
+      }
+    }
+
+    // ── Create club modal ──
+    const modal = document.getElementById('createModal');
+    document.getElementById('createBtn').addEventListener('click', () => modal.classList.remove('hidden'));
+    document.getElementById('cancelCreate').addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+
+    document.getElementById('confirmCreate').addEventListener('click', async () => {
+      const name = document.getElementById('clubName').value.trim();
+      const description = document.getElementById('clubDesc').value.trim();
+      if (!name) { toast('Please enter a club name.'); return; }
+
+      const btn = document.getElementById('confirmCreate');
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+
+      try {
+        const res = await api('/api/bookclub/clubs', {
+          method: 'POST',
+          body: JSON.stringify({ name, description })
+        });
+        if (res.ok) {
+          modal.classList.add('hidden');
+          document.getElementById('clubName').value = '';
+          document.getElementById('clubDesc').value = '';
+          toast('Club created! 🎉');
+          loadClubs();
+        } else {
+          const msg = await res.text();
+          toast(msg || 'Failed to create club.');
+        }
+      } catch {
+        toast('Request failed.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Create Club';
+    });
+
+    // ── Helpers ──
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+
+    // ── Init ──
+    loadClubs();
+  </script>
+</body>
+</html>
