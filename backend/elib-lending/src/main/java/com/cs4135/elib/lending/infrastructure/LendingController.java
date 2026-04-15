@@ -1,5 +1,6 @@
 package com.cs4135.elib.lending.infrastructure;
 
+import com.cs4135.elib.lending.application.acl.CatalogueServiceUnavailableException;
 import com.cs4135.elib.lending.application.usecases.BorrowBookUseCase;
 import com.cs4135.elib.lending.application.usecases.ReturnBookUseCase;
 import com.cs4135.elib.lending.domain.Loan;
@@ -30,6 +31,8 @@ public class LendingController {
     public ResponseEntity<?> borrow(@RequestBody BorrowRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(borrowBookUseCase.execute(request.userId(), request.bookId()));
+        } catch (CatalogueServiceUnavailableException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
         } catch (RuntimeException e) {
@@ -41,6 +44,8 @@ public class LendingController {
     public ResponseEntity<?> returnBook(@PathVariable UUID loanId) {
         try {
             return ResponseEntity.ok(returnBookUseCase.execute(loanId));
+        } catch (CatalogueServiceUnavailableException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
