@@ -1,4 +1,4 @@
-package elib.identity.dto;
+package com.cs4135.elib.identity.dto;
 
 import lombok.Data;
 import java.util.UUID;
