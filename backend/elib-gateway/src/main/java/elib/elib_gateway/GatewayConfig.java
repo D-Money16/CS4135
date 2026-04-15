@@ -1,6 +1,7 @@
 package elib.elib_gateway;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.gateway.server.mvc.common.MvcUtils;
 import org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
@@ -15,27 +16,25 @@ import java.net.URI;
 @Configuration
 public class GatewayConfig {
 
-    @Value("${identity.service.url}")
-    private String identityServiceUrl;
+    private final LoadBalancerClient loadBalancer;
 
-    @Value("${catalogue.service.url}")
-    private String catalogueServiceUrl;
+    public GatewayConfig(LoadBalancerClient loadBalancer) {
+        this.loadBalancer = loadBalancer;
+    }
 
-    @Value("${lending.service.url}")
-    private String lendingServiceUrl;
-
-    @Value("${notification.service.url}")
-    private String notificationServiceUrl;
-
-    @Value("${bookclub.service.url}")
-    private String bookclubServiceUrl;
+    private URI resolve(String serviceId) {
+        ServiceInstance instance = loadBalancer.choose(serviceId);
+        if (instance == null) {
+            throw new IllegalStateException("No instance available in Eureka for: " + serviceId);
+        }
+        return instance.getUri();
+    }
 
     @Bean
     public RouterFunction<ServerResponse> identityRoutes() {
-        String url = identityServiceUrl;
         return GatewayRouterFunctions.route("identity-service")
             .route(RequestPredicates.path("/api/user/**"), request -> {
-                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, URI.create(url));
+                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, resolve("elib-identity"));
                 return HandlerFunctions.http().handle(request);
             })
             .build();
@@ -43,10 +42,9 @@ public class GatewayConfig {
 
     @Bean
     public RouterFunction<ServerResponse> catalogueRoutes() {
-        String url = catalogueServiceUrl;
         return GatewayRouterFunctions.route("catalogue-service")
             .route(RequestPredicates.path("/api/book-catalogue/**"), request -> {
-                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, URI.create(url));
+                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, resolve("elib-catalogue"));
                 return HandlerFunctions.http().handle(request);
             })
             .build();
@@ -54,10 +52,9 @@ public class GatewayConfig {
 
     @Bean
     public RouterFunction<ServerResponse> lendingRoutes() {
-        String url = lendingServiceUrl;
         return GatewayRouterFunctions.route("lending-service")
             .route(RequestPredicates.path("/api/lending/**"), request -> {
-                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, URI.create(url));
+                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, resolve("elib-lending"));
                 return HandlerFunctions.http().handle(request);
             })
             .build();
@@ -65,10 +62,9 @@ public class GatewayConfig {
 
     @Bean
     public RouterFunction<ServerResponse> notificationRoutes() {
-        String url = notificationServiceUrl;
         return GatewayRouterFunctions.route("notification-service")
             .route(RequestPredicates.path("/api/notifications/**"), request -> {
-                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, URI.create(url));
+                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, resolve("elib-notification"));
                 return HandlerFunctions.http().handle(request);
             })
             .build();
@@ -76,10 +72,9 @@ public class GatewayConfig {
 
     @Bean
     public RouterFunction<ServerResponse> bookclubRoutes() {
-        String url = bookclubServiceUrl;
         return GatewayRouterFunctions.route("bookclub-service")
             .route(RequestPredicates.path("/api/bookclub/**"), request -> {
-                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, URI.create(url));
+                request.attributes().put(MvcUtils.GATEWAY_REQUEST_URL_ATTR, resolve("elib-bookclub"));
                 return HandlerFunctions.http().handle(request);
             })
             .build();

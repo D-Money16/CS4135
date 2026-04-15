@@ -18,6 +18,17 @@ services:
       timeout: 5s
       retries: 5
 
+  elib-discovery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: elib-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+
   elib-identity:
     build:
       context: ./backend
@@ -29,8 +40,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elib-discovery:
+        condition: service_started
     environment:
       SERVER_PORT: 9921
+      EUREKA_URI: http://elib-discovery:8761/eureka
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=identity
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -46,8 +60,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elib-discovery:
+        condition: service_started
     environment:
       SERVER_PORT: 9922
+      EUREKA_URI: http://elib-discovery:8761/eureka
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=catalogue
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -63,11 +80,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elib-discovery:
+        condition: service_started
       elib-catalogue:
         condition: service_started
     environment:
       SERVER_PORT: 9923
-      CATALOGUE_SERVICE_URL: http://elib-catalogue:9922
+      EUREKA_URI: http://elib-discovery:8761/eureka
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/mydb?currentSchema=lending
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
@@ -80,8 +99,12 @@ services:
         SERVICE_NAME: elib-notification
     ports:
       - "9924:9924"
+    depends_on:
+      elib-discovery:
+        condition: service_started
     environment:
       SERVER_PORT: 9924
+      EUREKA_URI: http://elib-discovery:8761/eureka
 
   elib-bookclub:
     build:
@@ -91,8 +114,12 @@ services:
         SERVICE_NAME: elib-bookclub
     ports:
       - "9925:9925"
+    depends_on:
+      elib-discovery:
+        condition: service_started
     environment:
       SERVER_PORT: 9925
+      EUREKA_URI: http://elib-discovery:8761/eureka
 
   elib-gateway:
     build:
@@ -103,6 +130,7 @@ services:
     ports:
       - "9920:9920"
     depends_on:
+      - elib-discovery
       - elib-identity
       - elib-catalogue
       - elib-lending
@@ -110,11 +138,7 @@ services:
       - elib-bookclub
     environment:
       SERVER_PORT: 9920
-      IDENTITY_SERVICE_URL: http://elib-identity:9921
-      CATALOGUE_SERVICE_URL: http://elib-catalogue:9922
-      LENDING_SERVICE_URL: http://elib-lending:9923
-      NOTIFICATION_SERVICE_URL: http://elib-notification:9924
-      BOOKCLUB_SERVICE_URL: http://elib-bookclub:9925
+      EUREKA_URI: http://elib-discovery:8761/eureka
 
 volumes:
   postgres_data:
