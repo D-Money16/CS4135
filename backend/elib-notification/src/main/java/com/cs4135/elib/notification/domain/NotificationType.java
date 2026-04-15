@@ -1,6 +1,8 @@
 package com.cs4135.elib.notification.domain;
 
 public enum NotificationType {
-    REMINDER,
-    OVERDUE
+    DUE_SOON_REMINDER,
+    OVERDUE_ALERT,
+    BORROW_CONFIRMATION,
+    RETURN_CONFIRMATION
 }
