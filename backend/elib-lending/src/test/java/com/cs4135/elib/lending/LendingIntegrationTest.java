@@ -42,7 +42,7 @@ class LendingIntegrationTest {
             .withPassword("test");
 
     static WireMockServer catalogueStub;
-
+    static WireMockServer notificationStub;
     static final UUID USER_ID = UUID.randomUUID();
     static final UUID BOOK_ID = UUID.randomUUID();
 
@@ -65,23 +65,30 @@ class LendingIntegrationTest {
         registry.add("resilience4j.retry.instances.catalogueService.max-attempts", () -> "1");
         registry.add("resilience4j.circuitbreaker.instances.catalogueService.sliding-window-size", () -> "100");
         registry.add("resilience4j.circuitbreaker.instances.catalogueService.failure-rate-threshold", () -> "100");
+        registry.add("notification.service.url", () -> "http://localhost:" + notificationStub.port());
     }
 
     @BeforeAll
     static void startWireMock() {
         catalogueStub = new WireMockServer(0);
         catalogueStub.start();
+
+        notificationStub = new WireMockServer(0);
+        notificationStub.start();
+
         WireMock.configureFor("localhost", catalogueStub.port());
     }
 
     @AfterAll
     static void stopWireMock() {
-        catalogueStub.stop();
+        if (catalogueStub != null) catalogueStub.stop();
+        if (notificationStub != null) notificationStub.stop();
     }
 
     @BeforeEach
     void setUp() {
         catalogueStub.resetAll();
+        notificationStub.resetAll();
         loanRepository.deleteAll();
         client = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
@@ -89,6 +96,18 @@ class LendingIntegrationTest {
     }
 
     // ── Helpers ─────────────────────────────────────────────
+
+    private void stubNotificationLoanCreated() {
+        notificationStub.stubFor(
+                post(urlEqualTo("/api/notifications/lending/loan-created"))
+                        .willReturn(aResponse().withStatus(200)));
+    }
+
+    private void stubNotificationDirect() {
+        notificationStub.stubFor(
+                post(urlEqualTo("/api/notifications/lending/direct"))
+                        .willReturn(aResponse().withStatus(200)));
+    }
 
     private void stubReserveCopySuccess(UUID bookId, UUID copyId) {
         catalogueStub.stubFor(
@@ -274,4 +293,82 @@ class LendingIntegrationTest {
 
         assertThat(loan).containsEntry("copyId", copyId.toString());
     }
+    @Test
+    @Order(8)
+    @DisplayName("Borrow book — sends BORROW_CONFIRMATION to Notification service")
+    void borrowBook_sendsNotification() {
+        UUID copyId = UUID.randomUUID();
+
+        stubReserveCopySuccess(BOOK_ID, copyId);
+        stubNotificationLoanCreated();
+
+        Map<String, Object> loan = borrow(USER_ID, BOOK_ID);
+
+        assertThat(loan).containsEntry("status", "ACTIVE");
+
+        // Verify Notification call
+        notificationStub.verify(1,
+                postRequestedFor(urlEqualTo("/api/notifications/lending/loan-created"))
+                        .withRequestBody(matchingJsonPath("$.userId", equalTo(USER_ID.toString())))
+                        .withRequestBody(matchingJsonPath("$.loanId"))
+                        .withRequestBody(matchingJsonPath("$.copyId", equalTo(copyId.toString())))
+                        .withRequestBody(matchingJsonPath("$.dueDate")));
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("Return book — sends RETURN_CONFIRMATION notification")
+    void returnBook_sendsNotification() {
+        UUID copyId = UUID.randomUUID();
+
+        stubReserveCopySuccess(BOOK_ID, copyId);
+        stubNotificationLoanCreated();
+
+        Map<String, Object> loan = borrow(USER_ID, BOOK_ID);
+        String loanId = (String) loan.get("id");
+
+        stubReleaseCopySuccess(copyId);
+        stubNotificationDirect();
+
+        Map<String, Object> returned = client.post()
+                .uri("/api/lending/loans/" + loanId + "/return")
+                .retrieve()
+                .body(Map.class);
+
+        assertThat(returned).containsEntry("status", "RETURNED");
+
+        // Verify Notification direct call
+        notificationStub.verify(1,
+                postRequestedFor(urlEqualTo("/api/notifications/lending/direct"))
+                        .withRequestBody(matchingJsonPath("$.userId", equalTo(USER_ID.toString())))
+                        .withRequestBody(matchingJsonPath("$.referenceId", equalTo(loanId)))
+                        .withRequestBody(matchingJsonPath("$.type", equalTo("RETURN_CONFIRMATION")))
+                        .withRequestBody(matchingJsonPath("$.source", equalTo("LENDING"))));
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("Notification failure does not break borrow flow")
+    void borrowBook_notificationFails_butLoanStillCreated() {
+        UUID copyId = UUID.randomUUID();
+
+        stubReserveCopySuccess(BOOK_ID, copyId);
+
+        // Notification returns 500
+        notificationStub.stubFor(
+                post(urlEqualTo("/api/notifications/lending/loan-created"))
+                        .willReturn(aResponse().withStatus(500))
+        );
+
+        Map<String, Object> loan = borrow(USER_ID, BOOK_ID);
+
+        // Borrow should still succeed
+        assertThat(loan).containsEntry("status", "ACTIVE");
+
+        // Notification was attempted
+        notificationStub.verify(1,
+                postRequestedFor(urlEqualTo("/api/notifications/lending/loan-created")));
+    }
+
+
 }

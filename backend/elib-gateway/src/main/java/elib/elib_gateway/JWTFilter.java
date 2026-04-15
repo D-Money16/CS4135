@@ -16,6 +16,7 @@ public class JWTFilter extends OncePerRequestFilter{
     private JwtUtil jwtUtil;
 
     public JWTFilter(JwtUtil jwtUtil) {
+
         this.jwtUtil = jwtUtil;
     }
 
@@ -27,21 +28,29 @@ public class JWTFilter extends OncePerRequestFilter{
         String path = httpServletRequest.getRequestURI();
 
         if (isPathPublic(path)) {
+
             filterChain.doFilter(httpServletRequest, httpServletResponse);
+
             return;
         }
 
         String token = extractToken(httpServletRequest);
 
         if (token == null){
+
             httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
             httpServletResponse.getWriter().write("Missing token");
+
             return;
         }
 
         if (!jwtUtil.validateToken(token)) {
+
             httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
             httpServletResponse.getWriter().write("Invalid token");
+
             return;
         }
 
@@ -49,8 +58,11 @@ public class JWTFilter extends OncePerRequestFilter{
         String role = claims.get("role", String.class);
 
         if (role == null || (!role.equals("STUDENT") && !role.equals("STAFF") && !role.equals("ADMIN"))) {
+
             httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
             httpServletResponse.getWriter().write("Invalid role");
+
             return;
         }
 
@@ -60,6 +72,7 @@ public class JWTFilter extends OncePerRequestFilter{
     }
 
         private boolean isPathPublic(String path) {
+
             return path.startsWith("/api/user/auth");
         }
             private String extractToken(HttpServletRequest httpServletRequest) {
@@ -67,6 +80,7 @@ public class JWTFilter extends OncePerRequestFilter{
                 String tokenHeader = httpServletRequest.getHeader("Authorization");
 
                 if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
+                    
                     return tokenHeader.substring(7);
                 }
 

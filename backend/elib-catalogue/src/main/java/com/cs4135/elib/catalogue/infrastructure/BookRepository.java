@@ -24,9 +24,9 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
         LEFT JOIN b.authors a
         LEFT JOIN b.categories c
         WHERE b.deletedAt IS NULL
-        AND (:title IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')))
-        AND (:authorName IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :authorName, '%')))
-        AND (:categoryName IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :categoryName, '%')))
+        AND (CAST(:title AS string) IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%')))
+        AND (CAST(:authorName AS string) IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:authorName AS string), '%')))
+        AND (CAST(:categoryName AS string) IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:categoryName AS string), '%')))
         AND (:status IS NULL OR EXISTS (
             SELECT bc FROM BookCopy bc WHERE bc.book = b AND bc.status = :status
         ))

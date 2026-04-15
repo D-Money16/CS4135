@@ -3,7 +3,6 @@ package com.cs4135.elib.identity.infrastructure;
 import com.cs4135.elib.identity.application.usecases.LoginUserUseCase;
 import com.cs4135.elib.identity.application.usecases.RegisterUserUseCases;
 import com.cs4135.elib.identity.domain.User;
-import com.cs4135.elib.identity.dto.AuthResponse;
 import com.cs4135.elib.identity.dto.LoginRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
