@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET = "elib-jwt-key-32bytes!!!!!!!!!!!!!!";
+    private static final String SECRET = "elib-super-secret-jwt-key-32bytes!";
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
     public boolean validateToken(String token) {
