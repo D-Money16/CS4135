@@ -30,6 +30,6 @@ public class LoginUserUseCase {
         }
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-        return new AuthResponse(token);
+        return new AuthResponse(token, user.getId().toString());
     }
 }
