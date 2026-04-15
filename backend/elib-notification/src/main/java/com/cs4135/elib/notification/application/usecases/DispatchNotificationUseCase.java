@@ -1,32 +1,42 @@
 package com.cs4135.elib.notification.application.usecases;
 
 import com.cs4135.elib.notification.domain.Notification;
+import com.cs4135.elib.notification.domain.NotificationStatus;
 import com.cs4135.elib.notification.domain.NotificationType;
 import com.cs4135.elib.notification.dto.NotificationRequest;
 import com.cs4135.elib.notification.infrastructure.NotificationHandler;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Component
-public class SendNotificationUseCase {
+public class DispatchNotificationUseCase {
 
     private final NotificationHandler notificationHandler;
 
-    public SendNotificationUseCase(NotificationHandler notificationHandler) {
+    public DispatchNotificationUseCase(NotificationHandler notificationHandler) {
         this.notificationHandler = notificationHandler;
     }
 
-    public void execute(NotificationRequest request) {
+    public Notification execute(NotificationRequest request) {
         validate(request);
 
-        NotificationType type = NotificationType.valueOf(request.getType().trim().toUpperCase());
-
         Notification notification = new Notification(
+                UUID.randomUUID(),
                 request.getUserId(),
-                type,
-                request.getMessage().trim()
+                request.getReferenceId(),
+                NotificationType.valueOf(request.getType().trim().toUpperCase()),
+                request.getMessage().trim(),
+                LocalDateTime.now(),
+                null,
+                NotificationStatus.PENDING,
+                request.getSource() == null || request.getSource().isBlank()
+                        ? "UNKNOWN"
+                        : request.getSource().trim().toUpperCase()
         );
 
-        notificationHandler.handle(notification);
+        return notificationHandler.handle(notification);
     }
 
     private void validate(NotificationRequest request) {
@@ -36,6 +46,10 @@ public class SendNotificationUseCase {
 
         if (request.getUserId() == null) {
             throw new IllegalArgumentException("User ID is required.");
+        }
+
+        if (request.getReferenceId() == null) {
+            throw new IllegalArgumentException("Reference ID is required.");
         }
 
         if (request.getType() == null || request.getType().trim().isEmpty()) {
@@ -49,7 +63,9 @@ public class SendNotificationUseCase {
         try {
             NotificationType.valueOf(request.getType().trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Invalid notification type. Allowed values: REMINDER, OVERDUE.");
+            throw new IllegalArgumentException(
+                    "Invalid notification type. Allowed values: DUE_SOON_REMINDER, OVERDUE_ALERT, BORROW_CONFIRMATION, RETURN_CONFIRMATION."
+            );
         }
     }
 }
