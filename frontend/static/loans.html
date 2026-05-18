@@ -136,11 +136,15 @@
     return `<span class="status-badge ${map[status] || ''}">${status}</span>`;
   }
 
-  function loanCard(loan, bookTitle) {
+  // client-side refs for loans to avoid exposing UUIDs in the DOM
+  const loanRefs = {};
+  function loanRefsClear() { for (const k in loanRefs) delete loanRefs[k]; }
+
+  function loanCard(loan, bookTitle, ref) {
     const isActive = loan.status === 'ACTIVE' || loan.status === 'OVERDUE';
     const overdueCls = loan.status === 'OVERDUE' ? ' overdue' : '';
     return `
-      <div class="loan-card${overdueCls}" id="loan-${loan.id}">
+      <div class="loan-card${overdueCls}" id="loan-${ref}">
         <div class="loan-info">
           <div class="loan-title">${escHtml(bookTitle)}</div>
           <div class="loan-dates">
@@ -151,7 +155,7 @@
         <div class="loan-right">
           ${dueLabelHtml(loan)}
           ${statusBadge(loan.status)}
-          ${isActive ? `<button class="btn-return" onclick="returnBook('${loan.id}', this)">Return</button>` : ''}
+          ${isActive ? `<button class="btn-return" data-ref="${ref}">Return</button>` : ''}
         </div>
       </div>`;
   }
@@ -177,19 +181,30 @@
       const active   = loans.filter(l => l.status === 'ACTIVE' || l.status === 'OVERDUE');
       const returned = loans.filter(l => l.status === 'RETURNED');
 
+      // build HTML and populate short refs
+      loanRefsClear();
+      let idx = 0;
       let html = '';
 
       if (active.length) {
         html += `<div class="section-title">Active <span class="count-badge">${active.length}</span></div>`;
-        html += active.map(l => loanCard(l, bookMap[l.bookId] || 'Unknown Book')).join('');
+        html += active.map(l => { const ref = 'l' + (idx++); loanRefs[ref] = l.id; return loanCard(l, bookMap[l.bookId] || 'Unknown Book', ref); }).join('');
       }
 
       if (returned.length) {
         html += `<div class="section-title">History <span class="count-badge">${returned.length}</span></div>`;
-        html += returned.map(l => loanCard(l, bookMap[l.bookId] || 'Unknown Book')).join('');
+        html += returned.map(l => { const ref = 'l' + (idx++); loanRefs[ref] = l.id; return loanCard(l, bookMap[l.bookId] || 'Unknown Book', ref); }).join('');
       }
 
       c.className = ''; c.innerHTML = html;
+
+      // attach listeners for return buttons without exposing UUIDs
+      document.querySelectorAll('button.btn-return[data-ref]').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const ref = this.dataset.ref;
+          returnBook(loanRefs[ref], this);
+        });
+      });
 
     } catch {
       c.className = ''; c.innerHTML = `<div class="empty"><div class="icon">⚠️</div><p>Could not load loans. Is the lending service running?</p></div>`;

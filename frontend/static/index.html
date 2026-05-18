@@ -321,16 +321,35 @@
           return;
         }
 
+        // build a short client-side ref map and store in sessionStorage so detail pages can resolve
+        const clubRefs = {};
         container.className = 'clubs-grid';
-        container.innerHTML = clubs.map(club => `
-          <div class="club-card" id="card-${club.clubId}">
+        container.innerHTML = clubs.map((club, i) => {
+          const ref = 'c' + i;
+          clubRefs[ref] = club.clubId;
+          return `
+          <div class="club-card" id="card-${ref}">
             <h3>${escHtml(club.name)}</h3>
             <p>${escHtml(club.description || 'No description provided.')}</p>
             <div class="club-card-footer">
-              <a class="btn-view" href="club-detail?id=${club.clubId}">View</a>
-              <button class="btn-join" onclick="joinClub('${club.clubId}', this)">Join</button>
+              <a class="btn-view" href="club-detail?ref=${ref}">View</a>
+              <button class="btn-join" data-ref="${ref}">Join</button>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
+
+        sessionStorage.setItem('clubRefs', JSON.stringify(clubRefs));
+
+        // attach join handlers that resolve the short ref to real clubId
+        document.querySelectorAll('.btn-join[data-ref]').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const refs = JSON.parse(sessionStorage.getItem('clubRefs') || '{}');
+            const ref = this.dataset.ref;
+            const clubId = refs[ref];
+            if (clubId) joinClub(clubId, this);
+            else toast('Could not resolve club reference.', 2000);
+          });
+        });
 
       } catch {
         container.innerHTML = `<div class="empty"><div class="icon">⚠️</div><p>Could not load clubs. Is the bookclub service running on port 8084?</p></div>`;

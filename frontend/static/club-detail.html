@@ -138,7 +138,11 @@
 
   if (!token || !userId) { window.location.href = '/login'; }
 
-  const clubId = new URLSearchParams(location.search).get('id');
+  // Resolve short client-side ref to real clubId from sessionStorage
+  const _params = new URLSearchParams(location.search);
+  const _ref = _params.get('ref');
+  const _clubRefs = JSON.parse(sessionStorage.getItem('clubRefs') || '{}');
+  const clubId = _clubRefs[_ref];
   if (!clubId) { window.location.href = '/'; }
 
   document.getElementById('navUsername').textContent = username;
@@ -208,47 +212,72 @@
         return;
       }
 
-      feed.innerHTML = msgs.map(m => renderMessage(m)).join('');
+      // populate short refs for messages and render without exposing UUIDs
+      messageRefsClear();
+      feed.innerHTML = msgs.map((m, i) => {
+        const ref = 'm' + i;
+        messageRefs[ref] = m.messageId;
+        return renderMessage(m, ref);
+      }).join('');
       feed.scrollTop = feed.scrollHeight;
+
+      // attach edit/delete handlers
+      document.querySelectorAll('.btn-edit[data-ref]').forEach(btn => btn.addEventListener('click', function () {
+        startEdit(this.dataset.ref, this);
+      }));
+      document.querySelectorAll('.btn-delete[data-ref]').forEach(btn => btn.addEventListener('click', function () {
+        deleteMsg(this.dataset.ref, this);
+      }));
     } catch {
       feed.innerHTML = `<div class="empty">Could not load messages.</div>`;
     }
   }
 
-  function renderMessage(m) {
+  // messageRefs maps short client refs to real message UUIDs
+  const messageRefs = {};
+
+  function renderMessage(m, ref) {
     const mine = m.authorUserId === userId;
     const edited = m.editedAt ? `<div class="msg-edited">edited</div>` : '';
     const actions = mine
       ? `<div class="msg-actions">
-           <button class="btn-msg-action" onclick="startEdit('${m.messageId}',this)">Edit</button>
-           <button class="btn-msg-action del" onclick="deleteMsg('${m.messageId}',this)">Delete</button>
+           <button class="btn-msg-action btn-edit" data-ref="${ref}">Edit</button>
+           <button class="btn-msg-action del btn-delete" data-ref="${ref}">Delete</button>
          </div>`
       : '';
     return `
-      <div class="message-bubble${mine ? ' mine' : ''}" id="msg-${m.messageId}">
+      <div class="message-bubble${mine ? ' mine' : ''}" id="msg-${ref}">
         <div class="msg-header">
-          <span class="msg-author">${mine ? 'You' : 'User ' + m.authorUserId.substring(0,8)}</span>
+          <span class="msg-author">${mine ? 'You' : 'User ' + (m.authorUserId || '').substring(0,8)}</span>
           <span class="msg-time">${timeAgo(m.sentAt)}</span>
         </div>
-        <div class="msg-content" id="content-${m.messageId}">${escHtml(m.content?.value || m.content || '')}</div>
+        <div class="msg-content" id="content-${ref}">${escHtml(m.content?.value || m.content || '')}</div>
         ${edited}
         ${actions}
       </div>`;
   }
 
-  function startEdit(msgId, btn) {
-    const contentEl = document.getElementById(`content-${msgId}`);
+  function startEdit(ref, btn) {
+    const msgId = messageRefs[ref];
+    const contentEl = document.getElementById(`content-${ref}`);
     const current = contentEl.textContent;
     contentEl.innerHTML = `
-      <textarea class="edit-area" id="edit-${msgId}">${escHtml(current)}</textarea>
+      <textarea class="edit-area" id="edit-${ref}">${escHtml(current)}</textarea>
       <div class="edit-actions">
-        <button class="btn-save" onclick="saveEdit('${msgId}')">Save</button>
-        <button class="btn-discard" onclick="loadMessages()">Discard</button>
+        <button class="btn-save" data-ref="${ref}">Save</button>
+        <button class="btn-discard" data-ref="${ref}">Discard</button>
       </div>`;
+
+    // attach handlers for the inline edit buttons
+    const saveBtn = contentEl.querySelector('.btn-save');
+    const discardBtn = contentEl.querySelector('.btn-discard');
+    if (saveBtn) saveBtn.addEventListener('click', () => saveEdit(ref));
+    if (discardBtn) discardBtn.addEventListener('click', () => loadMessages());
   }
 
-  async function saveEdit(msgId) {
-    const val = document.getElementById(`edit-${msgId}`).value.trim();
+  async function saveEdit(ref) {
+    const msgId = messageRefs[ref];
+    const val = document.getElementById(`edit-${ref}`).value.trim();
     if (!val) return;
     try {
       const res = await api(`/api/bookclub/clubs/${clubId}/messages/${msgId}`, {
@@ -259,7 +288,8 @@
     } catch { toast('Request failed.', 'error'); }
   }
 
-  async function deleteMsg(msgId, btn) {
+  async function deleteMsg(ref, btn) {
+    const msgId = messageRefs[ref];
     if (!confirm('Delete this message?')) return;
     try {
       const res = await api(`/api/bookclub/clubs/${clubId}/messages/${msgId}`, { method: 'DELETE' });
@@ -311,7 +341,7 @@
         <div class="member-row">
           <div>
             <div class="member-name">${m.userId === userId ? 'You' : 'User'}</div>
-            <div class="member-id">${m.userId}</div>
+            <div class="member-id">${m.userId === userId ? 'You' : 'User ' + (m.userId || '').substring(0,8)}</div>
           </div>
           <div>
             <span class="role-badge ${roleClass[m.role] || ''}">${m.role}</span>
@@ -327,6 +357,9 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function messageRefsClear() { for (const k in messageRefs) delete messageRefs[k]; }
+
+  // load club and messages
   loadClub();
   loadMessages();
 </script>

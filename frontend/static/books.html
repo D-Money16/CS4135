@@ -145,6 +145,9 @@
   const userId = localStorage.getItem('userId');
   const username = localStorage.getItem('username') || 'User';
 
+  // Client-side references to avoid exposing internal UUIDs in the DOM
+  const bookRefs = {};
+
   if (!token || !userId) { window.location.href = '/login'; }
 
   document.getElementById('navUsername').textContent = username;
@@ -177,8 +180,12 @@
       c.innerHTML = `<div class="empty"><div class="icon">📖</div><p>No books found.</p></div>`;
       c.className = ''; return;
     }
+    // build HTML while assigning short client-side refs
     c.className = 'books-grid';
-    c.innerHTML = books.map(b => {
+    bookRefsClear();
+    c.innerHTML = books.map((b, i) => {
+      const ref = 'b' + i;
+      bookRefs[ref] = b.id;
       const authors = b.authors?.map(a => a.name).join(', ') || '—';
       const cats = b.categories?.map(c => `<span class="tag">${escHtml(c.name)}</span>`).join('') || '';
       const canBorrow = b.availableCopies > 0;
@@ -189,12 +196,24 @@
           ${cats ? `<div class="book-tags">${cats}</div>` : ''}
           <div class="book-footer">
             ${availBadge(b.availableCopies, b.totalCopies)}
-            <button class="btn-primary btn-sm" onclick="borrowBook('${b.id}','${escHtml(b.title)}',this)" ${canBorrow ? '' : 'disabled'}>
+            <button class="btn-primary btn-sm" data-ref="${ref}" data-title="${escHtml(b.title)}" ${canBorrow ? '' : 'disabled'}>
               ${canBorrow ? 'Borrow' : 'Unavailable'}
             </button>
           </div>
         </div>`;
     }).join('');
+
+    // attach listeners without embedding UUIDs in the HTML
+    document.querySelectorAll('button[data-ref]').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const ref = this.dataset.ref;
+        borrowBook(bookRefs[ref], this.dataset.title, this);
+      });
+    });
+  }
+
+  function bookRefsClear() {
+    for (const k in bookRefs) delete bookRefs[k];
   }
 
   async function loadBooks(params = {}) {
