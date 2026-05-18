@@ -23,8 +23,11 @@ public class CatalogueController {
     @Autowired private DeleteBookUseCase deleteBookUseCase;
     @Autowired private UpdateBookUseCase updateBookUseCase;
 
+    @Autowired private RoleChecker roleChecker;
+
     @PostMapping("/books")
-    public Book addBook(@RequestBody AddBookRequest request) {
+    public Book addBook(@RequestBody AddBookRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        roleChecker.requireRole(httpRequest, "ADMIN");
         return addBookUseCase.execute(
             request.isbn(), request.title(), request.description(),
             request.publicationYear(), request.copies(),
