@@ -24,10 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for the Catalogue service.
- *
- * - Real Postgres via Testcontainers (no mocked DB)
- * - Full Spring Boot context with real HTTP
- * - No WireMock needed (Catalogue has no outbound service calls)
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -46,7 +42,6 @@ class CatalogueIntegrationTest {
 
     private RestClient client;
 
-    // Shared state across ordered tests
     static UUID createdBookId;
     static UUID createdCopyId;
 
@@ -58,7 +53,6 @@ class CatalogueIntegrationTest {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.properties.hibernate.default_schema", () -> "catalogue");
         registry.add("spring.datasource.hikari.connection-init-sql", () -> "CREATE SCHEMA IF NOT EXISTS catalogue");
-        // Disable Eureka registration in tests
         registry.add("eureka.client.enabled", () -> "false");
     }
 
@@ -216,7 +210,6 @@ class CatalogueIntegrationTest {
                 .body(List.class);
 
         assertThat(availability).hasSize(3);
-        // All copies should still be AVAILABLE at this point
         assertThat(availability).allMatch(a -> "AVAILABLE".equals(((Map<?, ?>) a).get("status")));
     }
 
@@ -233,7 +226,6 @@ class CatalogueIntegrationTest {
         assertThat(reserved).containsKey("copyId");
         createdCopyId = UUID.fromString((String) reserved.get("copyId"));
 
-        // Available copies should decrease from 3 to 2 — verify in real DB
         assertThat(bookCopyRepository.findAvailableCopiesByBookId(createdBookId)).hasSize(2);
     }
 
@@ -261,7 +253,6 @@ class CatalogueIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        // All 3 copies available again
         assertThat(bookCopyRepository.findAvailableCopiesByBookId(createdBookId)).hasSize(3);
     }
 
@@ -315,12 +306,10 @@ class CatalogueIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        // Soft-deleted: entity still in DB but marked deleted
         assertThat(bookRepository.findById(bookToDeleteId))
                 .isPresent()
                 .hasValueSatisfying(b -> assertThat(b.isDeleted()).isTrue());
 
-        // Not returned in list
         List<?> books = client.get()
                 .uri("/api/book-catalogue/books")
                 .retrieve()

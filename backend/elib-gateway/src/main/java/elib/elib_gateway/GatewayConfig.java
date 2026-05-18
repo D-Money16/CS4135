@@ -25,7 +25,7 @@ public class GatewayConfig {
     private URI resolve(String serviceId) {
         ServiceInstance instance = loadBalancer.choose(serviceId);
         if (instance == null) {
-            throw new IllegalStateException("No instance available in Eureka for: " + serviceId);
+            throw new ServiceInstanceUnavailableException(serviceId);
         }
         return instance.getUri();
     }

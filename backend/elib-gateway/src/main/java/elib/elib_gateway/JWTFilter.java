@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import io.jsonwebtoken.Claims;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,10 +15,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JWTFilter extends OncePerRequestFilter{
 
     private JwtUtil jwtUtil;
+    private final GatewayErrorResponseWriter errorResponseWriter;
 
-    public JWTFilter(JwtUtil jwtUtil) {
+    public JWTFilter(JwtUtil jwtUtil, GatewayErrorResponseWriter errorResponseWriter) {
 
         this.jwtUtil = jwtUtil;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -34,34 +37,34 @@ public class JWTFilter extends OncePerRequestFilter{
             return;
         }
 
+        if (header != null && !header.startsWith("Bearer ")) {
+            errorResponseWriter.write(httpServletRequest, httpServletResponse, HttpStatus.BAD_REQUEST, "Authorization header must use the Bearer scheme");
+            return;
+        }
+
         String token = extractToken(httpServletRequest);
 
         if (token == null){
 
-            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-            httpServletResponse.getWriter().write("Missing token");
+            errorResponseWriter.write(httpServletRequest, httpServletResponse, HttpStatus.UNAUTHORIZED, "Missing token");
 
             return;
         }
 
-        if (!jwtUtil.validateToken(token)) {
+        Claims claims;
 
-            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-            httpServletResponse.getWriter().write("Invalid token");
-
+        try {
+            claims = jwtUtil.getClaims(token);
+        } catch (RuntimeException ex) {
+            errorResponseWriter.write(httpServletRequest, httpServletResponse, HttpStatus.UNAUTHORIZED, "Invalid token");
             return;
         }
 
-        Claims claims = jwtUtil.getClaims(token);
         String role = claims.get("role", String.class);
 
         if (role == null || (!role.equals("STUDENT") && !role.equals("STAFF") && !role.equals("ADMIN"))) {
 
-            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-            httpServletResponse.getWriter().write("Invalid role");
+            errorResponseWriter.write(httpServletRequest, httpServletResponse, HttpStatus.UNAUTHORIZED, "Invalid role");
 
             return;
         }

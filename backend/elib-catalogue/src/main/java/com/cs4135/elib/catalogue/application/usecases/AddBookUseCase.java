@@ -48,7 +48,7 @@ public class AddBookUseCase {
         ISBN isbn = new ISBN(rawIsbn);
 
         bookRepository.findByIsbnValue(isbn.getValue()).ifPresent(existing -> {
-            throw new RuntimeException("A book with ISBN " + isbn.getValue() + " already exists");
+            throw new DuplicateIsbnException(isbn.getValue());
         });
 
         Book book = new Book(isbn, title, description, publicationYear);
